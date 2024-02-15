@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">TexO</string>
+    <string name="welcome_to_texo">Welcome to TexO</string>
+    <string name="text_from_scanning">Text from Scanning</string>
+    <string name="erase_text">Erase Text</string>
+    <string name="camera">Camera</string>
+    <string name="copy_text">Copy Text</string>
+</resources>
