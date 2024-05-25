@@ -2,17 +2,24 @@ package com.example.texo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.media.Image;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.SparseIntArray;
+import android.view.Surface;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -28,8 +35,17 @@ import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
+import java.util.Arrays;
+
 public class MainActivity extends AppCompatActivity {
 
+    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    static {
+        ORIENTATIONS.append(Surface.ROTATION_0, 0);
+        ORIENTATIONS.append(Surface.ROTATION_90, 90);
+        ORIENTATIONS.append(Surface.ROTATION_180, 180);
+        ORIENTATIONS.append(Surface.ROTATION_270, 270);
+    }
     EditText resulTxt;
     ImageView camera,dlt,copy;
     @Override
@@ -94,6 +110,40 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+
+    /**
+     * Get the angle by which an image must be rotated given the device's current
+     * orientation.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private int getRotationCompensation()
+            throws CameraAccessException {
+        // Get the device's current rotation relative to its "native" orientation.
+        // Then, from the ORIENTATIONS table, look up the angle the image must be
+        // rotated to compensate for the device's rotation.
+        // Cast the context to an activity.
+        Activity activity = (Activity) getApplicationContext();
+        int deviceRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+        int rotationCompensation = ORIENTATIONS.get(deviceRotation);
+
+        // Get the device's sensor orientation.
+        CameraManager cameraManager = (CameraManager) activity.getSystemService(CAMERA_SERVICE);
+        String[] cameraId = new String[0];
+        try {
+            cameraId = cameraManager.getCameraIdList();
+        } catch (CameraAccessException e) {
+            // Handle camera access exception (e.g., permission not granted)
+            e.printStackTrace();
+        }
+
+        int sensorOrientation = cameraManager
+                .getCameraCharacteristics(Arrays.toString(cameraId))
+                .get(CameraCharacteristics.SENSOR_ORIENTATION);
+
+        rotationCompensation = (sensorOrientation - rotationCompensation + 360) % 360;
+
+        return rotationCompensation;
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -105,10 +155,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void detectTextUsingML(Bitmap bitmap) {
+    private void detectTextUsingML(Bitmap bitmap)  {
+        //step 1
         TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+
+        //step 2
+
+//        int rotationDegrees = getRotationCompensation();
+        //step 3
         InputImage image = InputImage.fromBitmap(bitmap, 0);
 
+
+        //step
         Task<Text> result =
                 recognizer.process(image)
                         .addOnSuccessListener(new OnSuccessListener<Text>() {
